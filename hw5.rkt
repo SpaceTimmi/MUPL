@@ -26,14 +26,15 @@
 
 (define (racketlist->mupllist rl)
   (if (null? rl)
-    (cons (aunit) empty)
-    (cons (car rl) (racketlist->mupllist (cdr rl)))))
+    (aunit)
+    (apair (car rl)
+           (racketlist->mupllist (cdr rl)))))
 
 (define (mupllist->racketlist ml)
-  (if (aunit? (car ml))
+  (if (aunit? ml)
     empty 
-    (cons (car ml) (mupllist->racketlist (cdr ml)))))
-
+    (cons (apair-e1 ml)
+          (mupllist->racketlist (apair-e2 ml)))))
 
 ;; Problem 2
 
@@ -80,16 +81,16 @@
         [(call? e) (let ([cls (eval-under-env (call-funexp e) env)]
                          [v   (eval-under-env (call-actual e) env)])   
                      (if (closure? cls)
-                       (let ([main-fun (closure-fun cls)]     ;; function
-                             [f-body (fun-body main-fun)]     ;; function body
-                             [f-name (fun-nameopt main-fun)]  ;; function name
-                             [f-arg  (fun-formal main-fun)]   ;; function argument
-                             [old-env (closure-env cls)]      ;; old environment
-                             [new-env (if (equal? f-name #f)  ;; updated environment
-                                        (cons  
-                                          (cons f-arg v) old-env)     
-                                        (cons 
-                                          (cons f-name cls) (cons f-arg v) old-env))]) 
+                       (letrec ([main-fun (closure-fun cls)]     ;; function
+                                [f-body (fun-body main-fun)]     ;; function body
+                                [f-name (fun-nameopt main-fun)]  ;; function name
+                                [f-arg  (fun-formal main-fun)]   ;; function argument
+                                [old-env (closure-env cls)]      ;; old environment
+                                [new-env (if (equal? f-name #f)  ;; updated environment
+                                           (cons  
+                                             (cons f-arg v) old-env)     
+                                           (cons 
+                                             (cons f-name cls) (cons f-arg v) old-env))]) 
                          (eval-under-env f-body new-env))
                        (error "function definition is incorrect")))]
         [(apair? e) (let ([v1 (eval-under-env (apair-e1 e) env)]
