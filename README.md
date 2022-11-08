@@ -1,2 +1,2 @@
 # MUPL (Made Up Programming Language)
-mupl is a programming language (extension) written in Racket. 
+Mupl is an abstract syntax tree programming language written in Racket. 
