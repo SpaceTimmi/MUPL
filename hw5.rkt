@@ -77,19 +77,38 @@
                             [res (cons (mlet-var e) v)])
                      (eval-under-env (mlet-body e)
                                      (cons res env)))]
-        [(call? e) (let ([v1 (eval-under-env (call-funexp e) env)]
-                         [v2 (eval-under-env (call-actual e) env)])
-                     (if (closure? v1)
-                       (...)
-                       (error "function definition is incorrect") )  )]
-        [(...) (...)]
-        [(...) (...)]
-        [(...) (...)]
-        [(...) (...)]
+        [(call? e) (let ([cls (eval-under-env (call-funexp e) env)]
+                         [v   (eval-under-env (call-actual e) env)])   
+                     (if (closure? cls)
+                       (let ([main-fun (closure-fun cls)]     ;; function
+                             [f-body (fun-body main-fun)]     ;; function body
+                             [f-name (fun-nameopt main-fun)]  ;; function name
+                             [f-arg  (fun-formal main-fun)]   ;; function argument
+                             [old-env (closure-env cls)]      ;; old environment
+                             [new-env (if (equal? f-name #f)  ;; updated environment
+                                        (cons  
+                                          (cons f-arg v) old-env)     
+                                        (cons 
+                                          (cons f-name cls) (cons f-arg v) old-env))]) 
+                         (eval-under-env f-body new-env))
+                       (error "function definition is incorrect")))]
+        [(apair? e) (let ([v1 (eval-under-env (apair-e1 e) env)]
+                          [v2 (eval-under-env (apair-e2 e) env)])
+                      (apair v1 v2))]
+        [(fst? e) (let ([v (eval-under-env (fst-e e) env)])
+                    (if (apair? v)
+                      (apair-e1 v)
+                      (error "fst applied to a non-pair")))]
+        [(snd? e) (let ([v (eval-under-env (snd-e e) env)])
+                    (if (apair? v)
+                      (apair-e2 v)
+                      (error "snd applied to a non-pair")))]
+        [(isaunit? e) (let ([v (eval-under-env (isaunit-e e) env)])
+                        (if (aunit? v)
+                          (int 1)
+                          (int 0)))]
         [#t (error (format "bad MUPL expression: ~v" e))]))
 
-;(struct closure (env fun) #:transparent) 
-;(struct fun  (nameopt formal body) #:transparent) ;; a recursive(?) 1-argument function
 
 ;; Do NOT change
 (define (eval-exp e)
