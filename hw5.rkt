@@ -49,6 +49,7 @@
 ;; DO add more cases for other kinds of MUPL expressions.
 ;; We will test eval-under-env by calling it directly even though
 ;; "in real life" it would be a helper function of eval-exp.
+
 (define (eval-under-env e env)
   (cond [(var? e) 
          (envlookup env (var-string e))]
@@ -59,12 +60,12 @@
                     (int? v2))
                (int (+ (int-num v1) 
                        (int-num v2)))
-               (error "MUPL addition applied to non-number")))]
-        ;; CHANGE add more cases here
+               (error "mupl addition applied to non-number")))]
+        ;; change add more cases here
         [(int? e) e]
         [(closure? e) e]
-;;      [(var? e) (envlookup env (var-string e))]
-        [(fun? e) (closure e env)]
+        [(aunit? e) e]
+        [(fun? e) (closure env e)]
         [(ifgreater? e) (let ([v1 (eval-under-env (ifgreater-e1 e) env)]
                               [v2 (eval-under-env (ifgreater-e2 e) env)])
                           (if (and (int? v1)
@@ -89,8 +90,9 @@
                                 [new-env (if (equal? f-name #f)  ;; updated environment
                                            (cons  
                                              (cons f-arg v) old-env)     
-                                           (cons 
-                                             (cons f-name cls) (cons f-arg v) old-env))]) 
+                                           (letrec ([first  (cons (cons f-arg v) old-env)]
+                                                    [second (cons (cons f-name cls) first)])
+                                             second))]) 
                          (eval-under-env f-body new-env))
                        (error "function definition is incorrect")))]
         [(apair? e) (let ([v1 (eval-under-env (apair-e1 e) env)]
@@ -108,7 +110,7 @@
                         (if (aunit? v)
                           (int 1)
                           (int 0)))]
-        [#t (error (format "bad MUPL expression: ~v" e))]))
+        [#t (error (format "bad mupl expression: ~v" e))]))
 
 
 ;; Do NOT change
@@ -117,15 +119,34 @@
         
 ;; Problem 3
 
-(define (ifaunit e1 e2 e3) "CHANGE")
+(define (ifaunit e1 e2 e3) 
+   (ifgreater (isaunit e1) (int 0) e2 e3))
 
-(define (mlet* lstlst e2) "CHANGE")
+(define (mlet* lstlst e2) 
+  (eval-under-env e2 lstlst))
 
-(define (ifeq e1 e2 e3 e4) "CHANGE")
+(define (ifeq e1 e2 e3 e4)
+  (let ([v1 (eval-exp e1)]
+        [v2 (eval-exp e2)])
+    (if (and (int? v1) (int? v2))
+      (if (equal? v1 v2)
+        e3 
+        e4)
+      (error "ifeq cannot compare none-int types"))))
 
 ;; Problem 4
 
-(define mupl-map "CHANGE")
+(define mupl-map
+  (fun #f "mfun"
+       (fun "mlst" "ml"
+            (ifgreater (isaunit (snd (var "ml"))) (int 0)
+                     (apair (call (var "mfun")
+                                  (fst (var "ml")))
+                            (aunit))
+                     (apair (call (var "mfun")
+                                  (fst (var "ml")))
+                            (call (var "mlst")
+                                  (snd (var "ml"))))))))
 
 (define mupl-mapAddN 
   (mlet "map" mupl-map
