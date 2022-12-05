@@ -122,8 +122,16 @@
 (define (ifaunit e1 e2 e3) 
    (ifgreater (isaunit e1) (int 0) e2 e3))
 
-(define (mlet* lstlst e2) 
-  (eval-under-env e2 lstlst))
+(define (mlet* lstlst e2)
+  (letrec ([build (lambda (x)
+                    (cond [(null? x) e2]
+                          [#t (mlet (car (car x))
+                                    (cdr (car x))
+                                    (build (cdr x)))]))])
+    (eval-exp (build lstlst))))
+
+;(define (mlet* lstlst e2) 
+;  (eval-under-env e2 lstlst))
 
 (define (ifeq e1 e2 e3 e4)
   (let ([v1 (eval-exp e1)]
@@ -150,7 +158,12 @@
 
 (define mupl-mapAddN 
   (mlet "map" mupl-map
-        "CHANGE (notice map is now in MUPL scope)"))
+        (fun #f "i"
+             (fun "addN" "ml"
+                  (call (call (var "map")
+                              (fun #f "x" (add (var "x")
+                                               (var "i"))))
+                        (var "ml"))))))
 
 ;; Challenge Problem
 
